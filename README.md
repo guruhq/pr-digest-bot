@@ -33,23 +33,32 @@ env:
   BOT_USERS: "dependabot[bot],renovate[bot]"  # comma-separated bot usernames to exclude
 ```
 
-### 2. Add secrets
+### 2. Add secrets and variables
 
-In your repo settings → Secrets and variables → Actions, add:
+In your repo settings → Secrets and variables → Actions:
+
+**Secrets:**
 
 | Secret | Description |
 |--------|-------------|
 | `GH_PAT` | GitHub Personal Access Token with `repo` read access to the target repo |
-| `SLACK_WEBHOOK_URL` | Slack incoming webhook URL for your channel |
+| `SLACK_BOT_TOKEN` | Slack bot token (`xoxb-...`) with `chat:write` scope |
 | `ANTHROPIC_API_KEY` | Claude API key for PR summaries |
 
-### 3. Create a Slack webhook
+**Variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `SLACK_CHANNEL_ID` | Slack channel ID to post to (e.g., `C7B3VDMCJ`) |
+
+### 3. Set up a Slack app
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps)
 2. Create or select an app
-3. Enable **Incoming Webhooks**
-4. Add a webhook to your desired channel
-5. Copy the webhook URL
+3. Go to **OAuth & Permissions** → add the `chat:write` bot scope
+4. Install the app to your workspace
+5. Copy the **Bot User OAuth Token** (`xoxb-...`)
+6. Invite the bot to your channel: `/invite @YourBotName` in the channel
 
 ### 4. Create a GitHub PAT
 

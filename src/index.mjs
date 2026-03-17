@@ -14,7 +14,8 @@ const config = {
       .map((u) => u.trim().toLowerCase())
   ),
   ghToken: process.env.GH_PAT,
-  slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
+  slackBotToken: process.env.SLACK_BOT_TOKEN,
+  slackChannelId: process.env.SLACK_CHANNEL_ID,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 };
 
@@ -140,13 +141,21 @@ ${prDescriptions}`,
 // --- Slack ---
 
 async function postToSlack(message) {
-  const res = await fetch(config.slackWebhookUrl, {
+  const res = await fetch("https://slack.com/api/chat.postMessage", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: message }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.slackBotToken}`,
+    },
+    body: JSON.stringify({
+      channel: config.slackChannelId,
+      text: message,
+      unfurl_links: false,
+    }),
   });
-  if (!res.ok) {
-    throw new Error(`Slack error: ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  if (!data.ok) {
+    throw new Error(`Slack error: ${data.error}`);
   }
 }
 
