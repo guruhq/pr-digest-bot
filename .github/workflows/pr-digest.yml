@@ -25,6 +25,5 @@ jobs:
         run: node src/index.mjs
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
