@@ -51,6 +51,22 @@ async function fetchFiles(prNumber) {
   );
 }
 
+async function fetchFirstReviewRequestDate(prNumber) {
+  const res = await fetch(
+    `${GITHUB_API}/repos/${config.repoOwner}/${config.repoName}/issues/${prNumber}/timeline?per_page=100`,
+    {
+      headers: {
+        Authorization: `Bearer ${config.ghToken}`,
+        Accept: "application/vnd.github.mockingbird-preview+json",
+      },
+    }
+  );
+  if (!res.ok) return null;
+  const events = await res.json();
+  const reviewRequested = events.find((e) => e.event === "review_requested");
+  return reviewRequested ? reviewRequested.created_at : null;
+}
+
 // --- Review state logic ---
 
 function getReviewState(reviews) {
@@ -110,11 +126,9 @@ async function analyzeWithClaude(prs) {
       messages: [
         {
           role: "user",
-          content: `You are analyzing GitHub pull requests for a team digest. For each PR below, provide:
-1. A one-sentence summary of what the PR does based on the files changed. Be specific and concise (under 100 chars).
-2. An estimated review time (e.g., "~5 min", "~15 min", "~30 min", "~1 hr").
+          content: `You are analyzing GitHub pull requests for a team digest. For each PR below, write a one-sentence summary of what the PR does based on the files changed. Be specific and concise (under 100 chars).
 
-Return ONLY a JSON array, no other text: [{"number": 123, "summary": "...", "effort": "~X min"}, ...]
+Return ONLY a JSON array, no other text: [{"number": 123, "summary": "..."}, ...]
 
 ${prDescriptions}`,
         },
@@ -181,9 +195,10 @@ async function main() {
   // Enrich with reviews and files
   const enriched = await Promise.all(
     eligible.map(async (pr) => {
-      const [reviews, files] = await Promise.all([
+      const [reviews, files, firstReviewRequestDate] = await Promise.all([
         fetchReviews(pr.number),
         fetchFiles(pr.number),
+        fetchFirstReviewRequestDate(pr.number),
       ]);
 
       const reviewState = getReviewState(reviews);
@@ -191,6 +206,9 @@ async function main() {
         (sum, f) => sum + f.additions + f.deletions,
         0
       );
+
+      const waitingSince = firstReviewRequestDate || pr.created_at;
+      const daysWaiting = businessDays(new Date(waitingSince), today);
 
       return {
         number: pr.number,
@@ -207,6 +225,7 @@ async function main() {
           deletions: f.deletions,
         })),
         daysOpen: businessDays(new Date(pr.created_at), today),
+        daysWaiting,
         reviewers: pr.requested_reviewers.map((r) => r.login),
       };
     })
@@ -279,11 +298,15 @@ async function main() {
   // Format Slack message
   function formatPr(pr) {
     const summary = summaryMap.get(pr.number);
-    const line = `\u2022 <${pr.url}|#${pr.number}> \u2014 ${pr.title} \u2014 @${pr.user}`;
+    const waitingText =
+      pr.category === "needs_eyes" && pr.daysWaiting > 0
+        ? ` \u00b7 waiting ${pr.daysWaiting} day(s)`
+        : "";
+    const line = `\u2022 <${pr.url}|#${pr.number}> \u2014 *${pr.title}* \u2014 @${pr.user}`;
     if (summary) {
-      return `${line}\n  _${summary.summary}_ \u00b7 :clock1: ${summary.effort}`;
+      return `${line}\n  _${summary.summary}_${waitingText}`;
     }
-    return line;
+    return `${line}${waitingText}`;
   }
 
   const reReview = allCategorized.filter((pr) => pr.category === "re_review");
