@@ -2,7 +2,7 @@ name: PR Review Digest
 
 on:
   schedule:
-    - cron: "3 14 * * 1-5" # ~9:03am ET (2:03pm UTC) weekdays
+    - cron: "50 13 * * 1-5" # ~8:50am ET (1:50pm UTC) weekdays
   workflow_dispatch: # manual trigger for testing
 
 env:
