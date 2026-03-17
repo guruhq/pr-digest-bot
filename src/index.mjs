@@ -298,11 +298,23 @@ async function main() {
   // Format Slack message
   function formatPr(pr) {
     const summary = summaryMap.get(pr.number);
-    const waitingText =
-      pr.category === "needs_eyes" && pr.daysWaiting > 0
-        ? ` \u00b7 waiting ${pr.daysWaiting} day(s)`
-        : "";
-    const line = `\u2022 <${pr.url}|#${pr.number}> \u2014 *${pr.title}* \u2014 @${pr.user}`;
+
+    let bullet = "\u2022";
+    let waitingText = "";
+    if (pr.category === "needs_eyes") {
+      if (pr.daysWaiting < 1) {
+        bullet = ":large_green_circle:";
+        waitingText = " \u00b7 waiting < 1 day";
+      } else if (pr.daysWaiting === 1) {
+        bullet = ":yellow_circle:";
+        waitingText = " \u00b7 waiting 1 day";
+      } else {
+        bullet = ":red_circle:";
+        waitingText = ` \u00b7 waiting ${pr.daysWaiting} days`;
+      }
+    }
+
+    const line = `${bullet} <${pr.url}|#${pr.number}> \u2014 *${pr.title}* \u2014 @${pr.user}`;
     if (summary) {
       return `${line}\n  _${summary.summary}_${waitingText}`;
     }
