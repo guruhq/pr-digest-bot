@@ -304,17 +304,17 @@ async function main() {
     if (pr.category === "needs_eyes") {
       if (pr.daysWaiting < 1) {
         bullet = ":large_green_circle:";
-        waitingText = " \u00b7 waiting < 1 day";
+        waitingText = " \u00b7 *< 1 day*";
       } else if (pr.daysWaiting === 1) {
-        bullet = ":yellow_circle:";
-        waitingText = " \u00b7 waiting 1 day";
+        bullet = ":large_yellow_circle:";
+        waitingText = " \u00b7 *1 day*";
       } else {
         bullet = ":red_circle:";
-        waitingText = ` \u00b7 waiting ${pr.daysWaiting} days`;
+        waitingText = ` \u00b7 *${pr.daysWaiting} days*`;
       }
     }
 
-    const line = `${bullet} <${pr.url}|#${pr.number}> \u2014 *${pr.title}* \u2014 @${pr.user}`;
+    const line = `${bullet} <${pr.url}|*${pr.title}*> \u2014 @${pr.user}`;
     if (summary) {
       return `${line}\n  _${summary.summary}_${waitingText}`;
     }
