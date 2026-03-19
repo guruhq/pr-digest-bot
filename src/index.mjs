@@ -86,6 +86,22 @@ function getReviewState(reviews) {
   return "NONE";
 }
 
+// --- Priority prefix ordering ---
+
+const PREFIX_PRIORITY = {
+  product: 0,
+  "bug fix": 1,
+  security: 2,
+  sustaining: 3,
+};
+
+function getPrefixPriority(title) {
+  const match = title.match(/^\[([^\]]+)\]/i);
+  if (!match) return 4; // no prefix = lowest
+  const prefix = match[1].toLowerCase().trim();
+  return PREFIX_PRIORITY[prefix] ?? 4;
+}
+
 // --- Date helpers ---
 
 function businessDays(startDate, endDate) {
@@ -226,6 +242,7 @@ async function main() {
         })),
         daysOpen: businessDays(new Date(pr.created_at), today),
         daysWaiting,
+        prefixPriority: getPrefixPriority(pr.title),
         reviewers: pr.requested_reviewers.map((r) => r.login),
       };
     })
@@ -273,6 +290,12 @@ async function main() {
     needsEyes.push(pr);
     assigned.add(pr.number);
   }
+
+  // Sort each category by prefix priority
+  const sortByPrefix = (a, b) => a.prefixPriority - b.prefixPriority;
+  reReviewReady.sort(sortByPrefix);
+  needsEyes.sort(sortByPrefix);
+  quickWin.sort(sortByPrefix);
 
   // Cap at max PRs total
   const allCategorized = [];
